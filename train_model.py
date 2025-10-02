@@ -2,7 +2,7 @@
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.feature_extraction.text import TfidfVectorizer
 import joblib
 
@@ -10,21 +10,28 @@ import joblib
 print("Loading dataset...")
 df = pd.read_csv('csic_database.csv')
 
-# Combine all parts of the request into a single string for analysis
-df['request_full'] = df['Method'] + ' ' + df['User-Agent'] + ' ' + df['Pragma'] + ' ' + df['Cache-Control'] + ' ' + df['Accept'] + ' ' + df['Accept-Encoding'] + ' ' + df['Accept-Charset'] + ' ' + df['Accept-Language'] + ' ' + df['Host'] + ' ' + df['Connection'] + ' ' + df['Content-Length'] + ' ' + df['Content-Type'] + ' ' + df['Cookie'] + ' ' + df['URL']
+# Clean up column names by removing any leading/trailing whitespace
+df.columns = df.columns.str.strip()
 
-# Convert the label to a binary format (0 for normal, 1 for malicious)
-df['label'] = df['Anomalous'].apply(lambda x: 1 if x == '1' else 0)
+cols_to_use = ['Method', 'User-Agent', 'Pragma', 'Cache-Control', 'Accept', 'Host', 'URL', 'cookie', 'content-type']
+for col in cols_to_use:
+    df[col] = df[col].fillna('')
+
+df['request_full'] = df[cols_to_use].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
+
+# --- THE FINAL FIX ---
+# The 'classification' column already contains the 0s and 1s we need.
+# We can use it directly as our label 'y'.
+y = df['classification']
+# --------------------
 
 print("✅ 1. Dataset loaded and prepared.")
 
 
 # --- 2. Feature Engineering with TF-IDF ---
-# TF-IDF is excellent for finding suspicious keywords and characters in text.
 vectorizer = TfidfVectorizer(analyzer='char', ngram_range=(2, 3), max_features=2000)
-
-X = vectorizer.fit_transform(df['request_full'].astype(str))
-y = df['label']
+X = vectorizer.fit_transform(df['request_full'])
+# 'y' is already defined above
 
 print("✅ 2. Features extracted.")
 
@@ -32,7 +39,7 @@ print("✅ 2. Features extracted.")
 # --- 3. Train the Model ---
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-model = RandomForestClassifier(n_estimators=100, random_state=42)
+model = LogisticRegression(max_iter=1000)
 model.fit(X_train, y_train)
 
 print("✅ 3. Model training complete.")
