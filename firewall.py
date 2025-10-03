@@ -1,31 +1,24 @@
 import joblib
 from blockchain import log_threat_to_blockchain
 import urllib.parse
-from scipy.sparse import hstack
+from scipy.sparse import hstack # <-- Add this import
 
-# --- 1. Define the Feature Extraction Function ---
+# --- Define the Feature Extraction Functions ---
 def extract_manual_features(request_string):
-    """Converts a raw HTTP request string into a list of numerical features."""
-    
     decoded_string = urllib.parse.unquote(request_string)
-    
     features = []
     text_to_scan = str(decoded_string).lower()
 
     features.append(len(text_to_scan))
-    
     special_chars = ['\'', '<', '>', '&', ';', '-', '(', ')']
     features.append(sum(text_to_scan.count(c) for c in special_chars))
-
     sql_keywords = ['select', 'union', 'from', 'where', 'or 1=1', '--']
     features.append(sum(text_to_scan.count(k) for k in sql_keywords))
-    
     xss_keywords = ['<script>', 'alert(', 'onerror=', 'onload=', 'eval(']
     features.append(sum(text_to_scan.count(k) for k in xss_keywords))
-
     return features
 
-# --- 2. Load the trained model and vectorizer ---
+# --- Load both model and vectorizer ---
 try:
     MODEL = joblib.load('ml_model/threat_model.pkl')
     VECTORIZER = joblib.load('ml_model/vectorizer.pkl')
@@ -40,9 +33,11 @@ def analyze_request(request):
     request_full_text = f"{request.method} {request.user_agent} {request.full_path}"
 
     if MODEL and VECTORIZER:
-        # Create features for the single live request
+        # 1. Get manual features
         manual_features = [extract_manual_features(request_full_text)]
+        # 2. Get TF-IDF features
         tfidf_features = VECTORIZER.transform([request_full_text])
+        # 3. Combine both feature sets in the same way as training
         combined_features = hstack([manual_features, tfidf_features])
         
         malicious_probability = MODEL.predict_proba(combined_features)[0][1]
