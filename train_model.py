@@ -1,57 +1,66 @@
-# train_model.py
-
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-from sklearn.feature_extraction.text import TfidfVectorizer
 import joblib
+import os # <-- THIS IS THE FIX
 
-# --- 1. Load and Prepare the Dataset ---
+# --- 1. Define the Feature Extraction Function ---
+def extract_features(request_string):
+    """Converts a raw HTTP request string into a list of numerical features."""
+    features = []
+    request_string = str(request_string).lower()
+
+    special_chars = ['\'', '<', '>', '&', ';', '-', '(', ')']
+    features.append(len(request_string))
+    features.append(sum(request_string.count(c) for c in special_chars))
+
+    sql_keywords = ['select', 'union', 'from', 'where', 'or 1=1', '--']
+    features.append(sum(request_string.count(k) for k in sql_keywords))
+    
+    xss_keywords = ['<script>', 'alert(', 'onerror=', 'onload=', 'eval(']
+    features.append(sum(request_string.count(k) for k in xss_keywords))
+
+    return features
+
+print("✅ 1. Feature extraction function defined.")
+
+# --- 2. Load and Prepare the Dataset ---
 print("Loading dataset...")
 df = pd.read_csv('csic_database.csv')
-
-# Clean up column names by removing any leading/trailing whitespace
 df.columns = df.columns.str.strip()
 
-cols_to_use = ['Method', 'User-Agent', 'Pragma', 'Cache-Control', 'Accept', 'Host', 'URL', 'cookie', 'content-type']
+cols_to_use = ['Method', 'User-Agent', 'Host', 'URL']
 for col in cols_to_use:
     df[col] = df[col].fillna('')
-
 df['request_full'] = df[cols_to_use].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
 
-# --- THE FINAL FIX ---
-# The 'classification' column already contains the 0s and 1s we need.
-# We can use it directly as our label 'y'.
-y = df['classification']
-# --------------------
+df['label'] = df['classification']
 
-print("✅ 1. Dataset loaded and prepared.")
+print("✅ 2. Dataset loaded and prepared.")
 
+# --- 3. Apply Feature Extraction ---
+print("Extracting features from dataset...")
+X = [extract_features(req) for req in df['request_full']]
+y = df['label']
 
-# --- 2. Feature Engineering with TF-IDF ---
-vectorizer = TfidfVectorizer(analyzer='char', ngram_range=(2, 3), max_features=2000)
-X = vectorizer.fit_transform(df['request_full'])
-# 'y' is already defined above
+print("✅ 3. Features extracted.")
 
-print("✅ 2. Features extracted.")
-
-
-# --- 3. Train the Model ---
+# --- 4. Train the Model ---
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 model = LogisticRegression(max_iter=1000)
 model.fit(X_train, y_train)
 
-print("✅ 3. Model training complete.")
+print("✅ 4. Model training complete.")
 
-
-# --- 4. Evaluate the Model ---
+# --- 5. Evaluate the Model ---
 accuracy = model.score(X_test, y_test)
 print(f"📈 Model Accuracy: {accuracy * 100:.2f}%")
 
-
-# --- 5. Save the Model and Vectorizer ---
+# --- 6. Save the Trained Model ---
 joblib.dump(model, 'ml_model/threat_model.pkl')
-joblib.dump(vectorizer, 'ml_model/vectorizer.pkl')
+# Clean up the old vectorizer file if it exists
+if 'vectorizer.pkl' in os.listdir('ml_model'):
+    os.remove('ml_model/vectorizer.pkl')
 
-print("✅ 5. Model and vectorizer saved successfully to 'ml_model/' folder!")
+print("✅ 6. New model saved successfully to 'ml_model/' folder!")

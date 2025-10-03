@@ -6,7 +6,7 @@ ganache_url = "http://127.0.0.1:7545"
 web3 = Web3(Web3.HTTPProvider(ganache_url))
 
 # 1. PASTE YOUR CONTRACT ADDRESS HERE
-contract_address = "0x47649368f037D55E756500F7513319fADBD99485"
+contract_address = "0x1b41CFB43FE30C8F9fA5B302f72B6937597f8A9B"
 
 # 2. PASTE YOUR ABI HERE
 #    Open the file 'build/contracts/WafLog.json'.
