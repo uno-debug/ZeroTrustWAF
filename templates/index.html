@@ -2,41 +2,297 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zero Trust WAF Dashboard</title>
+    
+    <meta http-equiv="refresh" content="10">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: sans-serif; margin: 2em; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .blocked { color: red; font-weight: bold; }
+        /* --- CSS Variables for Easy Theming --- */
+        :root {
+            --dark-bg: #0d1117; /* GitHub Dark Background */
+            --card-bg: #161b22; /* Slightly lighter for cards/tables */
+            --text-primary: #c9d1d9; /* Light grey text */
+            --text-secondary: #8b949e; /* Muted grey for secondary text */
+            --accent-color: #58a6ff; /* GitHub Blue for highlights */
+            --border-color: #30363d; /* Subtle borders */
+            --status-blocked: #f85149; /* GitHub Red for blocked */
+            --status-allowed: #57ab5a; /* GitHub Green for allowed */
+            --score-high: #f7b448; /* Orange for high score warnings */
+            --hover-bg: rgba(94, 148, 255, 0.1); /* Subtle blue hover */
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+
+        /* --- Base Styles --- */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 2em;
+            line-height: 1.6;
+            transition: background-color 0.3s ease; /* Smooth transition for potential theme changes */
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2em;
+        }
+
+        /* --- Header & Status --- */
+        header {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5em 2em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 5px 20px var(--shadow-color);
+            transition: transform 0.3s ease;
+        }
+        header:hover {
+            transform: translateY(-3px);
+        }
+
+        h1 {
+            color: var(--accent-color);
+            margin: 0;
+            font-size: 2.2em;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        h1::before {
+            content: '🛡️'; /* Shield emoji for branding */
+            font-size: 0.8em;
+        }
+
+        .status {
+            font-size: 1.2em;
+            font-weight: 600;
+            padding: 0.5em 1em;
+            border-radius: 8px;
+            background-color: var(--border-color);
+            color: var(--text-primary);
+        }
+        .status.connected { color: var(--status-allowed); }
+        .status.disconnected { color: var(--status-blocked); }
+
+        h2 {
+            color: var(--text-secondary);
+            font-size: 1.6em;
+            font-weight: 600;
+            margin-bottom: 1em;
+            padding-bottom: 0.5em;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* --- Activity Log Table --- */
+        .activity-log {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 5px 20px var(--shadow-color);
+            overflow: hidden; /* Ensures rounded corners */
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95em;
+        }
+
+        th, td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            word-break: break-word; /* Prevents long strings from breaking layout */
+        }
+
+        thead tr {
+            background-color: rgba(255, 255, 255, 0.05); /* Slightly lighter header */
+        }
+
+        th {
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.8em;
+            color: var(--text-secondary);
+        }
+
+        tbody tr {
+            transition: background-color 0.2s ease;
+            cursor: pointer;
+        }
+        tbody tr:hover {
+            background-color: var(--hover-bg);
+        }
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* --- Decision & Score Badges --- */
+        .decision-cell {
+            font-weight: bold;
+            padding: 8px 12px;
+            border-radius: 6px;
+            text-align: center;
+            display: inline-block; /* Allows padding and background */
+            min-width: 80px; /* Consistent width for badges */
+        }
+
+        .decision-cell.blocked {
+            background-color: rgba(248, 81, 73, 0.15); /* Light red background */
+            color: var(--status-blocked);
+            animation: pulseRed 1.5s infinite; /* Red pulse for blocked */
+        }
+        .decision-cell.allowed {
+            background-color: rgba(87, 171, 90, 0.15); /* Light green background */
+            color: var(--status-allowed);
+        }
+        
+        .score-cell {
+            font-weight: bold;
+        }
+        .score-cell.high-score {
+            color: var(--score-high);
+        }
+
+        /* --- Detailed Log View (Interactive) --- */
+        .log-details {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 1em 1.5em;
+            border-top: 1px solid var(--border-color);
+            display: none; /* Hidden by default */
+            font-size: 0.9em;
+            color: var(--text-secondary);
+        }
+        .log-details p {
+            margin: 0.5em 0;
+        }
+        .log-details strong {
+            color: var(--text-primary);
+        }
+
+        /* --- Keyframe Animations --- */
+        @keyframes pulseRed {
+            0% { box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(248, 81, 73, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(248, 81, 73, 0); }
+        }
+
+        /* --- Responsive Design --- */
+        @media (max-width: 768px) {
+            body { padding: 1em; }
+            header { flex-direction: column; align-items: flex-start; gap: 1em; padding: 1em; }
+            h1 { font-size: 1.8em; }
+            .status { margin-top: 0.5em; }
+            table, thead, tbody, th, td, tr { display: block; }
+            thead tr { position: absolute; top: -9999px; left: -9999px; } /* Hide table headers */
+            tr { border: 1px solid var(--border-color); margin-bottom: 0.5em; border-radius: 8px; overflow: hidden; }
+            td { 
+                border: none;
+                position: relative;
+                padding-left: 50%;
+                text-align: right;
+            }
+            td::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 10px;
+                width: calc(50% - 20px);
+                padding-right: 10px;
+                white-space: nowrap;
+                text-align: left;
+                font-weight: 600;
+                color: var(--text-secondary);
+            }
+            .decision-cell { margin: auto; display: block; width: fit-content; } /* Center badges */
+            .log-details { padding: 0.5em 1em; }
+        }
+
     </style>
 </head>
 <body>
-    <h1>Zero Trust WAF Dashboard</h1>
-    <p><strong>Blockchain Status:</strong> {{ status }}</p>
+    <div class="container">
+        <header>
+            <h1>Zero Trust WAF</h1>
+            <p class="status {% if 'Connected' in status %}connected{% else %}disconnected{% endif %}">
+                Blockchain {{ status }}
+            </p>
+        </header>
 
-    <h2>Activity Log</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Timestamp</th>
-                <th>Source IP</th>
-                <th>Request Details</th>
-                <th>Threat Score</th>
-                <th>Decision</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for log in logs %}
-            <tr>
-                <td>{{ log[0] }}</td>
-                <td>{{ log[1] }}</td>
-                <td>{{ log[2] }}</td>
-                <td>{{ log[3] }}</td>
-                <td class="blocked">{{ log[4] }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+        <h2>Activity Log</h2>
+        <div class="activity-log">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Source IP</th>
+                        <th>Threat Score</th>
+                        <th>Decision</th>
+                        <th>Request Details</th> </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr onclick="toggleDetails(this)">
+                        <td data-label="Timestamp">{{ log[0] }}</td>
+                        <td data-label="Source IP">{{ log[1] }}</td>
+                        <td data-label="Threat Score" class="score-cell {% if log[3] > 80 %}high-score{% endif %}">{{ log[3] }}</td>
+                        <td data-label="Decision">
+                            <span class="decision-cell {% if log[4] == 'ALLOWED' %}allowed{% else %}blocked{% endif %}">
+                                {{ log[4] }}
+                            </span>
+                        </td>
+                        <td data-label="Request Details">{{ log[2][:80] }}...</td> </tr>
+                    <tr class="log-details-row">
+                        <td colspan="5">
+                            <div class="log-details">
+                                <p><strong>Full Request:</strong> {{ log[2] }}</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function toggleDetails(row) {
+            const detailsRow = row.nextElementSibling; // Get the hidden details row
+            if (detailsRow && detailsRow.classList.contains('log-details-row')) {
+                const detailsContent = detailsRow.querySelector('.log-details');
+                if (detailsContent) {
+                    if (detailsContent.style.display === 'block') {
+                        detailsContent.style.display = 'none';
+                    } else {
+                        detailsContent.style.display = 'block';
+                    }
+                }
+            }
+        }
+
+        // Initialize status color on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const statusElement = document.querySelector('.status');
+            if (statusElement) {
+                if (statusElement.textContent.includes('Connected')) {
+                    statusElement.classList.add('connected');
+                } else {
+                    statusElement.classList.add('disconnected');
+                }
+            }
+        });
+    </script>
 </body>
 </html>

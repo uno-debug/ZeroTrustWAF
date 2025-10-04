@@ -7705,12 +7705,12 @@
     "5777": {
       "events": {},
       "links": {},
-      "address": "0x8327b48007C7c06983Ed4BBdA6C2d7529d133618",
-      "transactionHash": "0x48e69010d8c18a8eb00b75a7136835869123fb979ae64f245daf3011fe547ecf"
+      "address": "0x79F35bc8600E024335e087f270DE4b61855A0Abc",
+      "transactionHash": "0x13ca9c49fbcf2dc57536fac49f0872666ee8885e3e5115c41a173b6fab628637"
     }
   },
   "schemaVersion": "3.4.16",
-  "updatedAt": "2025-10-03T18:56:44.184Z",
+  "updatedAt": "2025-10-04T12:21:05.329Z",
   "networkType": "ethereum",
   "devdoc": {
     "details": "Stores a log of security events from the WAF.",
