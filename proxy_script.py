@@ -8,11 +8,123 @@ from web3 import Web3
 import os
 
 # --- 1. CONFIGURATION: UPDATE THESE VALUES ---
-GANACHE_URL = "http://<YOUR_PC_IP_ADDRESS>:7545" 
-CONTRACT_ADDRESS = "<YOUR_LATEST_CONTRACT_ADDRESS>"
-CONTRACT_ABI = """
-PASTE YOUR FULL MULTI-LINE ABI HERE
-"""
+GANACHE_URL = "http://192.168.12.88:7545" 
+CONTRACT_ADDRESS = "0xedDAB8349074480e107A3C9b6495748795807188"
+CONTRACT_ABI = [
+    {
+      "anonymous": False,
+      "inputs": [
+        {
+          "indexed": True,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        },
+        {
+          "indexed": False,
+          "internalType": "string",
+          "name": "sourceIP",
+          "type": "string"
+        },
+        {
+          "indexed": False,
+          "internalType": "uint256",
+          "name": "threatScore",
+          "type": "uint256"
+        },
+        {
+          "indexed": False,
+          "internalType": "string",
+          "name": "decision",
+          "type": "string"
+        }
+      ],
+      "name": "LogAdded",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "allLogs",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "sourceIP",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "requestDetails",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "threatScore",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "decision",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": True
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_sourceIP",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_requestDetails",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_threatScore",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "_decision",
+          "type": "string"
+        }
+      ],
+      "name": "addLog",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getLogsCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": True
+    }
+  ]
 # -------------------------------------------
 
 # --- Initialize Web3 and Contract ---
