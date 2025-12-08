@@ -2,11 +2,11 @@ import json
 from web3 import Web3
 
 # --- Configuration ---
-ganache_url = "http://192.168.12.88:7545"
+ganache_url = "http://10.220.41.88:7545"
 web3 = Web3(Web3.HTTPProvider(ganache_url))
 
 # 1. PASTE YOUR CONTRACT ADDRESS HERE
-contract_address = "0xb84c22D2c0B3915783Bdb7B9DA0c1F05D6012754"
+contract_address = "0x3fB9f6415B6D7F408eb9CAebb3fBE97F9943a06E"
 
 # 2. PASTE YOUR ABI HERE
 #    Open the file 'build/contracts/WafLog.json'.
